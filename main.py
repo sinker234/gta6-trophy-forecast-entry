@@ -49,6 +49,11 @@ EARN_POOL_FRACTION = 0.65  # no-fit fallback: earners trail the pool's growth
 WINDOW_HOURS = 36.0
 SPREAD_FLOOR = 0.45
 SPREAD_CAP = 2.40
+SPREAD_SCALE = 0.70    # recalibrated 2026-11-21: the quadrature spread ran
+                       # wide on every held-out check (the real dilution
+                       # backtest and synthetic finals, plain and under
+                       # logit shocks up to 0.6); 0.70 was the widest
+                       # narrowing that never lost to the unscaled spread
 RW_COEF = 0.40         # random-walk spread per sqrt(day)
 LOGIT_CAP = 3.0        # a median stays within this logit distance of the last rate
 POOL_SD_FLOOR = 0.05   # allowance for Exophase's step refreshes
@@ -167,7 +172,7 @@ def spread_rows(centers, sds):
 
 def fallback_rows(trophies, last_rates, days):
     """Persistence-style rows, used when there is nothing to fit."""
-    sd = 0.5 * math.sqrt(max(days, 0.0))
+    sd = 0.5 * math.sqrt(max(days, 0.0)) * SPREAD_SCALE
     centers = []
     sds = []
     for j in range(len(trophies)):
@@ -378,7 +383,7 @@ def forecast_case(case):
         count_term = min(math.sqrt(1.0 / (last_count[j] + 0.5)), 0.6)
         sd = math.sqrt(rw * rw + slope_sds[j] ** 2 + pool_term ** 2
                        + count_term * count_term)
-        sds.append(min(max(sd, SPREAD_FLOOR), SPREAD_CAP))
+        sds.append(min(max(sd * SPREAD_SCALE, SPREAD_FLOOR), SPREAD_CAP))
     return spread_rows(centers, sds)
 
 
